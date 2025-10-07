@@ -1,24 +1,25 @@
-version: '3.4'
 services:
-  vpn:
-    container_name: vpn
-    image: 'dperson/openvpn-client:latest'
-    environment:
-      - 'OTHER_ARGS= --mute-replay-warnings'
-    cap_add:
-      - net_admin
-      - SYS_MODULE
-    restart: unless-stopped
-    volumes:
-      - '${ROOT}/MediaCenter/config/vpn:/vpn'
-      - /lib/modules:/lib/modules
-    security_opt:
-      - 'label:disable'
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
     devices:
-      - '/dev/net/tun:/dev/net/tun'
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - VPN_SERVICE_PROVIDER=private internet access
+      - OPENVPN_USER=${OPENVPN_USER}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      - SERVER_REGIONS=CA Vancouver
     ports:
-      - '8112:8112' #deluge web UI Port
-    command: '-f "" -r 192.168.68.0/24'
+      - 8112:8112 # deluge
+      - 6881:6881 # deluge
+      - 6881:6881/udp # deluge
+    volumes:
+      - '${ROOT}/MediaCenter/config/gluetun:/gluetun'
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true" 
+    restart: always
 
   deluge:
     container_name: deluge
@@ -31,11 +32,14 @@ services:
     volumes:
       - '${ROOT}/MediaCenter/config/deluge:/config'
       - '${HDDSTORAGE}:/MediaCenterBox'
-    #ports:
-    #  - '8112:8112' #uncomment if you are not using the VPN
-    network_mode: 'service:vpn' #comment/remove if you are not using the VPN
-    depends_on:                 #comment/remove if you are not using the VPN
-      - vpn                     #comment/remove if you are not using the VPN
+    ports:
+      - 8112:8112
+      - 6881:6881
+      - 6881:6881/udp
+      - 58846:58846 #optional
+    network_mode: 'service:gluetun'
+    depends_on:
+      - gluetun
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -63,6 +67,8 @@ services:
       - '/etc/localtime:/etc/localtime:ro'
       - '${ROOT}/MediaCenter/config/sonarr:/config'
       - '${HDDSTORAGE}:/MediaCenterBox'
+    ports: 
+      - '8989:8989'
   radarr:
     container_name: radarr
     image: 'lscr.io/linuxserver/radarr:latest'
@@ -76,6 +82,8 @@ services:
       - '/etc/localtime:/etc/localtime:ro'
       - '${ROOT}/MediaCenter/config/radarr:/config'
       - '${HDDSTORAGE}:/MediaCenterBox'
+    ports: 
+      - '7878:7878'
       
   bazarr:
     container_name: bazarr
@@ -92,7 +100,19 @@ services:
       - '${HDDSTORAGE}:/MediaCenterBox'
     ports:
       - '6767:6767'
-      
+
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr
+    container_name: recyclarr
+    user: 1000:1000
+    restart: unless-stopped
+    volumes:
+      - '${ROOT}/MediaCenter/config/recyclarr:/config'
+    environment:
+      - TZ=${TZ}
+      - 'PUID=${PUID}'
+      - 'PGID=${PGID}'
+
   plex-server:
     container_name: plex-server
     image: 'plexinc/pms-docker:latest'
@@ -104,35 +124,9 @@ services:
       - '${ROOT}/MediaCenter/config/plex/db:/config'
       - '${ROOT}/MediaCenter/config/plex/transcode:/transcode'
       - '${HDDSTORAGE}/Completed:/MediaCenterBox'
-
-
-### Optional Containers
-
-  wireguard:
-    image: ghcr.io/linuxserver/wireguard:latest
-    container_name: wireguard
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    environment:
-      - PUID=${PUID} # default user id, defined in .env
-      - PGID=${PUID} # default user id, defined in .env
-      - TZ=${TZ} # timezone, defined in .env
-      - SERVERURL=${SERVERURL} # server public ip, auto to auto find, defined in .env
-      - SERVERPORT=51820 #optional
-      - PEERS=${PEERS} # number of clients to be auto configured, defined in .env
-      - PEERDNS=auto #optional
-      - INTERNAL_SUBNET=172.168.69.0 #optional, network for devices ips. CAN NOT be the same as your home network
-      - ALLOWEDIPS=0.0.0.0/0 #optional
-    volumes:
-      - ${ROOT}/MediaCenter/config/wireguard:/config # config folder
-      - /lib/modules:/lib/modules
     ports:
-      - 51820:51820/udp
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
-    restart: always
-  
+      - '32400:32400'
+
   overseerr:
     image: 'sctx/overseerr:latest'
     container_name: overseerr
@@ -144,3 +138,38 @@ services:
     volumes:
       - '${ROOT}/MediaCenter/config/overseerr/config:/app/config'
     restart: unless-stopped
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    ports:
+      - 3000:3000
+    volumes:
+      - '${ROOT}/MediaCenter/config/homepage/config:/app/config' # Make sure your local config directory exists
+      - '${HDDSTORAGE}:/MediaCenterBox'
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: 192.168.50.2:3000
+      
+  flaresolverr:
+    image: flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=info
+      - LOG_HTML=false
+      - TZ=${TZ}
+    ports:
+      - "8191:8191"
+
+volumes:
+  portainer_data:
