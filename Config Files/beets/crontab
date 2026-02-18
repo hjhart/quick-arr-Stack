@@ -1,0 +1,9 @@
+# Crontab for beets automated imports
+# This file should be placed in the beets config directory
+# and will be picked up by the container
+
+# Run music import daily at 3:00 AM
+0 3 * * * /scripts/import-music.sh >> /config/cron-import.log 2>&1
+
+# Optional: Run every 6 hours instead (uncomment to use)
+# 0 */6 * * * /scripts/import-music.sh >> /config/cron-import.log 2>&1

@@ -1,0 +1,93 @@
+# Beets Configuration for slskd → Plex pipeline
+# Documentation: https://beets.readthedocs.io/en/stable/reference/config.html
+
+# Directory where beets stores imported music (Plex library)
+directory: /music
+
+# Beets database location
+library: /config/library.db
+
+# Import settings - using HARD LINKS to allow seeding in slskd
+import:
+  # Don't copy files - use hard links instead
+  copy: no
+  move: no
+  # Enable hard linking (files stay in downloads + linked to music)
+  hardlink: yes
+  # Write metadata to files
+  write: yes
+  # Non-interactive mode for automated imports
+  quiet: yes
+  # When quiet mode can't find a strong match, import as-is instead of skipping
+  quiet_fallback: asis
+  # Log import decisions
+  log: /config/import.log
+  # Skip duplicates already in library
+  duplicate_action: skip
+  # Auto-tag threshold (1.0 = perfect match only, lower = more lenient)
+  timid: no
+  # Directory for imports that couldn't be matched
+  # (uncomment if you want unmatched files moved somewhere)
+  # singletons: yes
+
+# Path formats - how files are organized in the music library
+paths:
+  default: $albumartist/$album%aunique{}/$track - $title
+  singleton: Non-Album/$artist - $title
+  comp: Compilations/$album%aunique{}/$track - $title
+  albumtype:soundtrack: Soundtracks/$album/$track - $title
+
+# Match settings
+match:
+  # Accept matches with at least this similarity (0.0-1.0)
+  strong_rec_thresh: 0.04
+  # Prefer release closest to original date
+  preferred:
+    countries: ['US', 'GB', 'CA']
+    media: ['Digital Media', 'CD', 'Vinyl']
+
+# Plugins - enable useful ones for organization
+plugins:
+  - fetchart
+  - embedart
+  - lastgenre
+  - scrub
+  - missing
+  - duplicates
+  - info
+
+# Fetch album art
+fetchart:
+  auto: yes
+  minwidth: 300
+  sources:
+    - filesystem
+    - coverart
+    - itunes
+    - amazon
+    - albumart
+
+# Embed art in audio files
+embedart:
+  auto: yes
+  maxwidth: 500
+  remove_art_file: no
+
+# Auto-tag genres from Last.fm
+lastgenre:
+  auto: yes
+  source: album
+  count: 3
+  fallback: Unknown
+  canonical: yes
+
+# Clean up metadata before writing
+scrub:
+  auto: yes
+
+# UI settings for manual imports (when needed)
+ui:
+  color: yes
+
+# Logging
+verbose: 0

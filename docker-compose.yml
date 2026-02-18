@@ -40,8 +40,8 @@ services:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID}
+      - PGID=${PGID}
       - 'TZ=${TZ}'
     volumes:
       - '${ROOT}/MediaCenter/config/prowlarr:/config'
@@ -224,6 +224,70 @@ services:
       retries: 3
       start_period: 40s
 
+  wire-pod:
+    container_name: wire-pod
+    hostname: escapepod
+    image: ghcr.io/kercre123/wire-pod:main
+    restart: unless-stopped
+    environment:
+      WIREPOD_DATA_DIR: /data
+    ports:
+      # - "80:80"
+      # - "443:443"
+      - "8080:8080"
+      - "8084:8084"
+    volumes:
+      - wire-pod-data:/data
+      - wire-pod-images:/images
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://localhost:8080/ok" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  slskd:
+    image: slskd/slskd
+    container_name: slskd
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - SLSKD_REMOTE_CONFIGURATION=true
+    volumes:
+      - ${ROOT}/MediaCenter/config/slskd:/app
+      - ${HDDSTORAGE}/Downloads:/app/downloads
+    ports:
+      - "5030:5030"
+      - "5031:5031"
+      - "50300:50300"
+
+  beets:
+    image: lscr.io/linuxserver/beets:latest
+    container_name: beets
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      # Enable cron daemon for scheduled imports
+      - DOCKER_MODS=linuxserver/mods:universal-cron
+    volumes:
+      # Beets config & database
+      - ${ROOT}/MediaCenter/config/beets:/config
+      # slskd downloads (source for imports)
+      - ${HDDSTORAGE}/Downloads:/downloads
+      # Music library for Plex (destination)
+      - ${HDDSTORAGE}/Completed/Music:/music
+      # Import script
+      - ${ROOT}/MediaCenter/config/beets/scripts:/scripts
+      # Custom initialization (sets up cron)
+      - ${ROOT}/MediaCenter/config/beets/custom-cont-init.d:/custom-cont-init.d:ro
 
 volumes:
   portainer_data:
+  wire-pod-images:
+    driver: local
+  wire-pod-data:
+    driver: local

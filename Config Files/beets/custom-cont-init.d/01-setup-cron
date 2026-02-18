@@ -1,0 +1,15 @@
+#!/bin/bash
+# Setup cron for automated music imports
+
+# Make the import script executable
+chmod +x /scripts/import-music.sh
+
+# Install the crontab
+echo "Setting up cron for music imports..."
+crontab -u abc /config/crontab 2>/dev/null || {
+    # If crontab command fails, try adding to system cron
+    cp /config/crontab /etc/cron.d/beets-import
+    chmod 644 /etc/cron.d/beets-import
+}
+
+echo "Cron setup complete - music will be imported daily at 3:00 AM"
