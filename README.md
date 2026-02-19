@@ -1,5 +1,63 @@
 ## Quick Arr Stack
 
+> **This is [@hjhart](https://github.com/hjhart)'s personal fork of [Rick45/quick-arr-Stack](https://github.com/Rick45/quick-arr-Stack).**
+> See below for setup notes specific to this installation. The original upstream documentation follows.
+
+### hjhart's Setup
+
+A home media server running on Ubuntu with a NAS mounted at `/mnt/nas`.
+
+**Running services:**
+
+| Service | Purpose | Port |
+|---------|---------|------|
+| Gluetun | VPN gateway (PIA, CA Vancouver) | — |
+| Deluge | Torrent downloader (via VPN) | 8112 |
+| Prowlarr | Indexer aggregator | 9696 |
+| Sonarr | TV series management | 8989 |
+| Radarr | Movie management | 7878 |
+| Bazarr | Subtitle management | 6767 |
+| Plex | Media server | 32400 |
+| Homepage | Dashboard | 3000 |
+| Flaresolverr | Cloudflare bypass | 8191 |
+| Tailscale | Remote access VPN | — |
+| Slskd | Soulseek client | 5030 |
+| Beets | Music tagger/organizer | — |
+| Youtarr | YouTube downloader | 3087 |
+| Wire-pod | Vector robot server | 8080 |
+
+**Quick start:**
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/hjhart/quick-arr-Stack
+cd quick-arr-Stack
+
+# 2. Set up your environment
+cp .env.template .env
+# Edit .env with your values (VPN credentials, paths, etc.)
+
+# 3. Start everything
+docker compose up -d
+```
+
+**Directory layout:**
+
+```
+~/quick-arr-Stack/       ← this repo (compose file + config templates)
+~/MediaCenter/config/    ← per-service config volumes (git: hjhart/MediaCenter, private)
+/mnt/nas/                ← NAS mount (media storage)
+  Completed/             ← organized media served by Plex
+    Movies/
+    TV/
+    Music/
+    youtube/
+  Downloads/             ← active/in-progress downloads
+  Backup/                ← backups
+```
+
+---
+
 TV shows and movies download, sorted, with the desired quality and subtitles, behind a VPN (optional), ready to watch, in a beautiful media player.
 All automated.
 
