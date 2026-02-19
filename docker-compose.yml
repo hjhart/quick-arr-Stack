@@ -276,10 +276,8 @@ services:
     volumes:
       # Beets config & database
       - ${ROOT}/MediaCenter/config/beets:/config
-      # slskd downloads (source for imports)
-      - ${HDDSTORAGE}/Downloads:/downloads
-      # Music library for Plex (destination)
-      - ${HDDSTORAGE}/Completed/Music:/music
+      # Mount parent directory to enable hard linking
+      - ${HDDSTORAGE}:/media
       # Import script
       - ${ROOT}/MediaCenter/config/beets/scripts:/scripts
       # Custom initialization (sets up cron)

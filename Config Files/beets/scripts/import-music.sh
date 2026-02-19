@@ -5,7 +5,7 @@
 set -e
 
 # Configuration
-DOWNLOADS_DIR="/downloads"
+DOWNLOADS_DIR="/media/Downloads/Music"
 LOG_FILE="/config/cron-import.log"
 PROCESSED_FILE="/config/processed_dirs.txt"
 MAX_LOG_SIZE=10485760  # 10MB

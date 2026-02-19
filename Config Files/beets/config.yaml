@@ -2,7 +2,7 @@
 # Documentation: https://beets.readthedocs.io/en/stable/reference/config.html
 
 # Directory where beets stores imported music (Plex library)
-directory: /music
+directory: /media/Completed/Music
 
 # Beets database location
 library: /config/library.db
