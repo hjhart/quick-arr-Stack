@@ -10,6 +10,13 @@ LOG_FILE="/config/cron-import.log"
 PROCESSED_FILE="/config/processed_dirs.txt"
 MAX_LOG_SIZE=10485760  # 10MB
 
+# Plex integration - trigger a Music library scan after imports
+# Find your token at: https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/
+# Find your Music section ID by visiting: http://YOUR_PLEX_IP:32400/library/sections?X-Plex-Token=YOUR_TOKEN
+PLEX_URL="http://your-plex-host:32400"
+PLEX_TOKEN="your_plex_token"
+PLEX_MUSIC_SECTION="5"
+
 # Ensure processed file exists
 touch "$PROCESSED_FILE"
 
@@ -87,6 +94,18 @@ for dir in "${IMPORT_DIRS[@]}"; do
 done
 
 log "=== Import complete: $SUCCESS_COUNT succeeded, $FAIL_COUNT with issues ==="
+
+# Trigger Plex Music library scan if anything was imported
+if [[ $SUCCESS_COUNT -gt 0 ]]; then
+    log "Triggering Plex Music library scan..."
+    if curl -sf --max-time 10 \
+        "${PLEX_URL}/library/sections/${PLEX_MUSIC_SECTION}/refresh?X-Plex-Token=${PLEX_TOKEN}" \
+        -o /dev/null; then
+        log "Plex scan triggered successfully"
+    else
+        log "WARNING: Failed to trigger Plex scan (Plex may be unreachable)"
+    fi
+fi
 
 # Clean up old entries from processed file (keep last 1000)
 if [[ $(wc -l < "$PROCESSED_FILE") -gt 1000 ]]; then
