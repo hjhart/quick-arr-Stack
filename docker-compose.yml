@@ -279,6 +279,43 @@ services:
     ports:
       - "8083:8083"
 
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /home/james/eighteenth-avenue/homeassistant/config:/config
+
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /home/james/eighteenth-avenue/mosquitto/config:/mosquitto/config
+      - /home/james/eighteenth-avenue/mosquitto/data:/mosquitto/data
+      - /home/james/eighteenth-avenue/mosquitto/log:/mosquitto/log
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt:latest
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /home/james/eighteenth-avenue/zigbee2mqtt:/app/data
+    ports:
+      - "8099:8080"
+    devices:
+      - /dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_90a228290164ec118ee24debee680de7-if00-port0:/dev/ttyUSB0
+
   beets:
     image: lscr.io/linuxserver/beets:latest
     container_name: beets
